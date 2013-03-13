@@ -1,5 +1,5 @@
 #!/usr/bin/guile \
--e main -s
+--no-auto-compile -e main -s
 !#
 
 (use-modules (ice-9 binary-ports)
