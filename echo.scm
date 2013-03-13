@@ -57,12 +57,13 @@
                        ("^t" (write-char #\tab))
                        ("^v" (write-char #\vtab))
                        ("^\\\\" (write-char #\\))
-                       ("^0([1-7][0-7]{0,2})?"
+                       ("^0[1-7][0-7]{0,2}"
                         => (lambda (substr)
                              (define val (string->number substr 8))
                              (if (< val 256)
                                  (put-u8 (current-output-port) val)
                                  (set! status #f))))
+                       ("^0" (write-char #\nul))
                        (else (set! status #f)
                              (write-char #\\)))))
               (else
