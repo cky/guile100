@@ -35,19 +35,11 @@
          #'(let ((match (regexp-exec compiled key pos)))
              (if match
                  (begin
-                   (apply func (map (lambda (i)
-                                      (match:substring match i))
-                                    (iota (match:count match))))
+                   (func (match:substring match))
                    (match:end match))
                  (regexp-case key pos next ...)))))
       ((_ key pos (regexp expr ...) next ...)
-       (with-syntax ((compiled (make-regexp (syntax->datum #'regexp))))
-         #'(let ((match (regexp-exec compiled key pos)))
-             (if match
-                 (begin
-                   expr ...
-                   (match:end match))
-                 (regexp-case key pos next ...))))))))
+       #'(regexp-case key pos (regexp => (lambda _ expr ...)) next ...)))))
 
 (define (echo str)
   (define len (string-length str))
