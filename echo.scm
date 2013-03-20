@@ -9,12 +9,12 @@
 (define (main args)
   (setlocale LC_ALL "")
   (let loop ((args (cdr args))
-             (first #t))
+             (first-arg #t))
     (cond ((null? args)
            (newline)
            (quit status))
           (else
-           (unless first
+           (unless first-arg
              (write-char #\space))
            (let ((arg (car args)))
              (call-with-input-string arg initial)
