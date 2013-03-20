@@ -34,17 +34,12 @@
            (cut call-with-input-file file cat-port)
            (read-error-handler file)))))
 
-(define cat-port
-  (case-lambda
-   (()
-    (cat-port (current-input-port)))
-   ((in)
-    (cat-port in (current-output-port)))
-   ((in out)
-    (define bv (get-bytevector-some in))
-    (unless (eof-object? bv)
-      (catch 'system-error (cut put-bytevector out bv) write-error-handler)
-      (cat-port in out)))))
+(define* (cat-port #:optional (in (current-input-port))
+                              (out (current-output-port)))
+  (define bv (get-bytevector-some in))
+  (unless (eof-object? bv)
+    (catch 'system-error (cut put-bytevector out bv) write-error-handler)
+    (cat-port in out)))
 
 (define (read-error-handler label)
   (lambda args
