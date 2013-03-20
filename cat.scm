@@ -3,7 +3,6 @@
 !#
 
 (use-modules (srfi srfi-1)
-             (srfi srfi-26)
              (ice-9 binary-ports)
              (ice-9 format)
              (ice-9 getopt-long))
@@ -31,14 +30,14 @@
     (catch 'system-error cat-port (read-error-handler "stdin")))
    ((file)
     (catch 'system-error
-           (cut call-with-input-file file cat-port)
+           (lambda () call-with-input-file file cat-port)
            (read-error-handler file)))))
 
 (define* (cat-port #:optional (in (current-input-port))
                               (out (current-output-port)))
   (define bv (get-bytevector-some in))
   (unless (eof-object? bv)
-    (catch 'system-error (cut put-bytevector out bv) write-error-handler)
+    (catch 'system-error (lambda () put-bytevector out bv) write-error-handler)
     (cat-port in out)))
 
 (define (read-error-handler label)
