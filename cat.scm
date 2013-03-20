@@ -2,7 +2,9 @@
 -e main -s
 !#
 
-(use-modules (ice-9 binary-ports)
+(use-modules (srfi srfi-1)
+             (srfi srfi-26)
+             (ice-9 binary-ports)
              (ice-9 format)
              (ice-9 getopt-long))
 
@@ -20,36 +22,42 @@
                         (cat)
                         (cat file)))
                   files))
+    (catch 'system-error force-output write-error-handler)
     (quit status)))
 
 (define cat
   (case-lambda
    (()
-    (catch 'system-error
-           (lambda ()
-             (cat-port (current-input-port)))
-           (error-handler "stdin")))
+    (catch 'system-error cat-port (read-error-handler "stdin")))
    ((file)
     (catch 'system-error
-           (lambda ()
-             (call-with-input-file file cat-port))
-           (error-handler file)))))
+           (cut call-with-input-file file cat-port)
+           (read-error-handler file)))))
 
 (define cat-port
   (case-lambda
+   (()
+    (cat-port (current-input-port)))
    ((in)
     (cat-port in (current-output-port)))
    ((in out)
-    (define byte (get-u8 in))
-    (unless (eof-object? byte)
-      (put-u8 out byte)
+    (define bv (get-bytevector-some in))
+    (unless (eof-object? bv)
+      (catch 'system-error (cut put-bytevector out bv) write-error-handler)
       (cat-port in out)))))
 
-(define (error-handler label)
-  (lambda (key subr message args data)
-    (apply format (current-error-port)
-           (string-append "~a: " message "~%") label args)
+(define (read-error-handler label)
+  (lambda args
+    (perror label (system-error-errno args))
     (set! status #f)))
+
+(define (write-error-handler . args)
+  (perror "write error" (system-error-errno args))
+  ;; Don't try to flush buffers at exit, since it'd obviously fail.
+  (primitive-_exit 1))
+
+(define (perror label errno)
+  (format (current-error-port) "cat: ~a: ~a~%" label (strerror errno)))
 
 (define (help _)
   (display "Usage: cat [OPTION]... [FILE]...\n")
@@ -70,8 +78,8 @@
 (define (get-getopt-options)
   ;; getopt-long doesn't like extraneous option properties, so filter out
   (map (lambda (option)
-         (filter (lambda (prop)
-                   (not (and (pair? prop) (eq? (car prop) 'description))))
+         (remove (lambda (prop)
+                   (and (pair? prop) (eq? (car prop) 'description)))
                  option))
        getopt-options))
 
